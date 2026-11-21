@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+{% block title %}Kết Quả Đánh Giá · DrowsyGuard{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <h1 class="page-title">Kết Quả <span class="gradient-text">Đánh Giá</span> Mô Hình</h1>
+  <p class="page-desc">Phân tích toàn diện hiệu suất trên tập test gồm 600 ảnh (150 mỗi lớp)</p>
+</section>
+
+<!-- Tab controls -->
+<div class="tabs-wrapper">
+  <div class="tabs" id="result-tabs">
+    <button class="tab active" data-tab="training" id="tab-training">📈 Quá Trình Training</button>
+    <button class="tab" data-tab="evaluation" id="tab-evaluation">🎯 Đánh Giá Test Set</button>
+    <button class="tab" data-tab="report" id="tab-report">📋 Classification Report</button>
+  </div>
+</div>
+
+<!-- ── Tab: Training ── -->
+<div class="tab-panel active" data-panel="training" id="panel-training">
+  <div class="charts-grid-2">
+
+    <div class="chart-card animate-fade-up" id="chart-accuracy">
+      <div class="chart-header">
+        <h3>Accuracy Curve</h3>
+        <span class="chart-badge">Top1: 99.17%</span>
+      </div>
+      {% if figures.get('accuracy_curve') %}
+      <img src="{{ url_for('serve_figure', name='accuracy_curve.png') }}" alt="Accuracy Curve" class="chart-img" loading="lazy"/>
+      {% else %}
+      <div class="chart-placeholder">Chưa có dữ liệu</div>
+      {% endif %}
+    </div>
+
+    <div class="chart-card animate-fade-up delay-1" id="chart-loss">
+      <div class="chart-header">
+        <h3>Loss Curve</h3>
+        <span class="chart-badge">Best Val: 0.0627</span>
+      </div>
+      {% if figures.get('loss_curve') %}
+      <img src="{{ url_for('serve_figure', name='loss_curve.png') }}" alt="Loss Curve" class="chart-img" loading="lazy"/>
+      {% else %}
+      <div class="chart-placeholder">Chưa có dữ liệu</div>
+      {% endif %}
+    </div>
+
+  </div>
+
+  {% if figures.get('results_train') %}
+  <div class="chart-card full-width animate-fade-up delay-2" id="chart-results-train">
+    <div class="chart-header">
+      <h3>Toàn Bộ Kết Quả Training</h3>
+      <span class="chart-badge">20 epochs</span>
+    </div>
+    <img src="{{ url_for('serve_figure', name='results_train.png') }}" alt="Training Results" class="chart-img" loading="lazy"/>
+  </div>
+  {% endif %}
+</div>
+
+<!-- ── Tab: Evaluation ── -->
+<div class="tab-panel" data-panel="evaluation" id="panel-evaluation">
+  <div class="charts-grid-2">
+
+    <div class="chart-card animate-fade-up" id="chart-confusion">
+      <div class="chart-header">
+        <h3>Confusion Matrix</h3>
+        <span class="chart-badge">Test Set</span>
+      </div>
+      {% if figures.get('confusion_matrix_test') %}
+      <img src="{{ url_for('serve_figure', name='confusion_matrix_test.png') }}" alt="Confusion Matrix" class="chart-img" loading="lazy"/>
+      {% else %}
+      <div class="chart-placeholder">Chưa có dữ liệu</div>
+      {% endif %}
+    </div>
+
+    <div class="chart-card animate-fade-up delay-1" id="chart-per-class">
+      <div class="chart-header">
+        <h3>Per-Class Metrics</h3>
+        <span class="chart-badge">Precision / Recall / F1</span>
+      </div>
+      {% if figures.get('per_class_metrics_test') %}
+      <img src="{{ url_for('serve_figure', name='per_class_metrics_test.png') }}" alt="Per-class Metrics" class="chart-img" loading="lazy"/>
+      {% else %}
+      <div class="chart-placeholder">Chưa có dữ liệu</div>
+      {% endif %}
+    </div>
+
+  </div>
+
+  {% if figures.get('classification_report_table_test') %}
+  <div class="chart-card full-width animate-fade-up delay-2" id="chart-cls-table">
+    <div class="chart-header">
+      <h3>Classification Report (Table)</h3>
+      <span class="chart-badge">600 samples</span>
+    </div>
+    <img src="{{ url_for('serve_figure', name='classification_report_table_test.png') }}" alt="Classification Report Table" class="chart-img" loading="lazy"/>
+  </div>
+  {% endif %}
+
+  <!-- Summary cards -->
+  <div class="summary-cards" id="summary-cards">
+    {% set labels = ['awake','drowsy','yawning','looking_away'] %}
+    {% set emojis = {'awake':'😊','drowsy':'😴','yawning':'🥱','looking_away':'👀'} %}
+    {% set accents = {'awake':'#00e676','drowsy':'#ff1744','yawning':'#ff9100','looking_away':'#2979ff'} %}
+    {% for lbl in labels %}
+    {% if report.get(lbl) %}
+    <div class="sum-card animate-fade-up" id="sum-{{ lbl }}" style="--accent:{{ accents[lbl] }}">
+      <div class="sum-emoji">{{ emojis[lbl] }}</div>
+      <div class="sum-name">{{ lbl.replace('_',' ').title() }}</div>
+      <div class="sum-row"><span>Precision</span><strong>{{ "%.1f"|format(report[lbl]['precision']*100) }}%</strong></div>
+      <div class="sum-row"><span>Recall</span><strong>{{ "%.1f"|format(report[lbl]['recall']*100) }}%</strong></div>
+      <div class="sum-row"><span>F1-Score</span><strong>{{ "%.1f"|format(report[lbl]['f1-score']*100) }}%</strong></div>
+      <div class="sum-row"><span>Support</span><strong>{{ report[lbl]['support']|int }}</strong></div>
+    </div>
+    {% endif %}
+    {% endfor %}
+  </div>
+</div>
+
+<!-- ── Tab: Report ── -->
+<div class="tab-panel" data-panel="report" id="panel-report">
+  <div class="report-wrapper animate-fade-up">
+    <div class="report-table-wrap">
+      <table class="report-table" id="report-table">
+        <thead>
+          <tr>
+            <th>Class</th>
+            <th>Precision</th>
+            <th>Recall</th>
+            <th>F1-Score</th>
+            <th>Support</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% set labels = ['awake','drowsy','yawning','looking_away'] %}
+          {% set emojis = {'awake':'😊','drowsy':'😴','yawning':'🥱','looking_away':'👀'} %}
+          {% for lbl in labels %}
+          {% if report.get(lbl) %}
+          <tr id="report-row-{{ lbl }}">
+            <td><span class="report-class">{{ emojis[lbl] }} {{ lbl.replace('_',' ').title() }}</span></td>
+            <td><span class="score-pill">{{ "%.4f"|format(report[lbl]['precision']) }}</span></td>
+            <td><span class="score-pill">{{ "%.4f"|format(report[lbl]['recall']) }}</span></td>
+            <td><span class="score-pill score-f1">{{ "%.4f"|format(report[lbl]['f1-score']) }}</span></td>
+            <td>{{ report[lbl]['support']|int }}</td>
+          </tr>
+          {% endif %}
+          {% endfor %}
+          {% if report.get('macro avg') %}
+          <tr class="avg-row" id="report-row-macro">
+            <td><span class="report-class">📐 Macro Avg</span></td>
+            <td><span class="score-pill">{{ "%.4f"|format(report['macro avg']['precision']) }}</span></td>
+            <td><span class="score-pill">{{ "%.4f"|format(report['macro avg']['recall']) }}</span></td>
+            <td><span class="score-pill score-f1">{{ "%.4f"|format(report['macro avg']['f1-score']) }}</span></td>
+            <td>{{ report['macro avg']['support']|int }}</td>
+          </tr>
+          {% endif %}
+          {% if report.get('weighted avg') %}
+          <tr class="avg-row" id="report-row-weighted">
+            <td><span class="report-class">⚖️ Weighted Avg</span></td>
+            <td><span class="score-pill">{{ "%.4f"|format(report['weighted avg']['precision']) }}</span></td>
+            <td><span class="score-pill">{{ "%.4f"|format(report['weighted avg']['recall']) }}</span></td>
+            <td><span class="score-pill score-f1">{{ "%.4f"|format(report['weighted avg']['f1-score']) }}</span></td>
+            <td>{{ report['weighted avg']['support']|int }}</td>
+          </tr>
+          {% endif %}
+          {% if report.get('accuracy') %}
+          <tr class="accuracy-row" id="report-row-accuracy">
+            <td colspan="3"><span class="report-class">🏆 Overall Accuracy</span></td>
+            <td colspan="2"><span class="score-pill score-accuracy">{{ "%.4f"|format(report['accuracy']) }} ({{ "%.2f"|format(report['accuracy']*100) }}%)</span></td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Tab switching
+document.querySelectorAll('.tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelector(`[data-panel="${btn.dataset.tab}"]`).classList.add('active');
+  });
+});
+</script>
+{% endblock %}

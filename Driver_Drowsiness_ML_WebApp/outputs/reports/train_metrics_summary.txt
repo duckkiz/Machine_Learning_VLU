@@ -1,0 +1,9 @@
+TRAIN METRICS SUMMARY
+run_dir: D:\driver_drowsiness_pj\outputs\runs\classify_best
+num_epochs_logged: 20
+best_top1_acc: 0.9917
+best_val_loss: 0.0627
+final_train_loss: 0.0709
+final_val_loss: 0.0902
+final_top1_acc: 0.9867
+final_top5_acc: 1.0000

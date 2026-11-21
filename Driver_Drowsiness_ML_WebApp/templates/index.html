@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · DrowsyGuard{% endblock %}
+
+{% block content %}
+
+<!-- ══════════════════════════════════════════════
+     HERO SECTION
+══════════════════════════════════════════════ -->
+<section class="hero" id="hero">
+  <div class="hero-content">
+    <div class="hero-badge animate-fade-up">
+      <span class="badge-dot pulse"></span>
+      <span>Computer Vision &amp; Machine Learning Project</span>
+    </div>
+
+    <h1 class="hero-title animate-fade-up delay-1">
+      Driver <span class="gradient-text">Drowsiness</span><br/>Detection System
+    </h1>
+
+    <p class="hero-desc animate-fade-up delay-2">
+      Hệ thống nhận diện trạng thái tài xế theo <strong>thời gian thực</strong> sử dụng
+      <em>MediaPipe Face Landmarker</em> để phát hiện khuôn mặt và
+      <em>YOLO11-cls</em> để phân loại trạng thái ngủ gật, ngáp, và mất tập trung.
+    </p>
+
+    <div class="hero-cta animate-fade-up delay-3">
+      <a href="{{ url_for('demo') }}" class="btn btn-primary" id="hero-demo-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+        Live Demo
+      </a>
+      <a href="{{ url_for('results') }}" class="btn btn-ghost" id="hero-results-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Xem Kết Quả
+      </a>
+    </div>
+  </div>
+
+  <div class="hero-visual animate-fade-left delay-2">
+    <div class="stat-ring">
+      <svg viewBox="0 0 200 200" class="ring-svg">
+        <circle cx="100" cy="100" r="85" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="12"/>
+        <circle cx="100" cy="100" r="85" fill="none" stroke="url(#ringGrad)" stroke-width="12"
+                stroke-dasharray="534" stroke-dashoffset="6.4"
+                stroke-linecap="round" transform="rotate(-90 100 100)" class="ring-arc"/>
+        <defs>
+          <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#6366f1"/>
+            <stop offset="100%" stop-color="#06b6d4"/>
+          </linearGradient>
+        </defs>
+      </svg>
+      <div class="ring-label">
+        <span class="ring-value">98.8%</span>
+        <span class="ring-sub">Accuracy</span>
+      </div>
+    </div>
+
+    <!-- floating cards -->
+    <div class="float-card fc-1">
+      <span class="fc-icon">🟢</span>
+      <div><div class="fc-label">Awake</div><div class="fc-val">97.69% F1</div></div>
+    </div>
+    <div class="float-card fc-2">
+      <span class="fc-icon">🔴</span>
+      <div><div class="fc-label">Drowsy</div><div class="fc-val">99.33% F1</div></div>
+    </div>
+    <div class="float-card fc-3">
+      <span class="fc-icon">🟡</span>
+      <div><div class="fc-label">Yawning</div><div class="fc-val">98.99% F1</div></div>
+    </div>
+    <div class="float-card fc-4">
+      <span class="fc-icon">🔵</span>
+      <div><div class="fc-label">Looking Away</div><div class="fc-val">99.33% F1</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════
+     METRICS CARDS
+══════════════════════════════════════════════ -->
+<section class="section" id="metrics-section">
+  <h2 class="section-title">Hiệu Suất Mô Hình</h2>
+  <div class="metrics-grid">
+
+    <div class="metric-card animate-fade-up" id="metric-accuracy">
+      <div class="metric-icon" style="background: linear-gradient(135deg,#6366f1,#8b5cf6)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <div class="metric-info">
+        <div class="metric-value">{{ "%.2f"|format((test_summary.get('accuracy','0')|float)*100) }}%</div>
+        <div class="metric-label">Test Accuracy</div>
+      </div>
+      <div class="metric-bar"><div class="metric-fill" style="width:{{ (test_summary.get('accuracy','0')|float)*100 }}%;background:linear-gradient(90deg,#6366f1,#8b5cf6)"></div></div>
+    </div>
+
+    <div class="metric-card animate-fade-up delay-1" id="metric-f1">
+      <div class="metric-icon" style="background: linear-gradient(135deg,#06b6d4,#0891b2)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      </div>
+      <div class="metric-info">
+        <div class="metric-value">{{ "%.2f"|format((test_summary.get('macro_f1','0')|float)*100) }}%</div>
+        <div class="metric-label">Macro F1-Score</div>
+      </div>
+      <div class="metric-bar"><div class="metric-fill" style="width:{{ (test_summary.get('macro_f1','0')|float)*100 }}%;background:linear-gradient(90deg,#06b6d4,#0891b2)"></div></div>
+    </div>
+
+    <div class="metric-card animate-fade-up delay-2" id="metric-precision">
+      <div class="metric-icon" style="background: linear-gradient(135deg,#10b981,#059669)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+      </div>
+      <div class="metric-info">
+        <div class="metric-value">{{ "%.2f"|format((test_summary.get('macro_precision','0')|float)*100) }}%</div>
+        <div class="metric-label">Macro Precision</div>
+      </div>
+      <div class="metric-bar"><div class="metric-fill" style="width:{{ (test_summary.get('macro_precision','0')|float)*100 }}%;background:linear-gradient(90deg,#10b981,#059669)"></div></div>
+    </div>
+
+    <div class="metric-card animate-fade-up delay-3" id="metric-recall">
+      <div class="metric-icon" style="background: linear-gradient(135deg,#f59e0b,#d97706)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+      </div>
+      <div class="metric-info">
+        <div class="metric-value">{{ "%.2f"|format((test_summary.get('macro_recall','0')|float)*100) }}%</div>
+        <div class="metric-label">Macro Recall</div>
+      </div>
+      <div class="metric-bar"><div class="metric-fill" style="width:{{ (test_summary.get('macro_recall','0')|float)*100 }}%;background:linear-gradient(90deg,#f59e0b,#d97706)"></div></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════
+     SYSTEM PIPELINE
+══════════════════════════════════════════════ -->
+<section class="section" id="pipeline-section">
+  <h2 class="section-title">Pipeline Hệ Thống</h2>
+  <div class="pipeline">
+
+    <div class="pipe-step animate-fade-up" id="pipe-1">
+      <div class="pipe-icon" style="--clr:#6366f1">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+      </div>
+      <div class="pipe-label">Webcam<br/><span>Frame Input</span></div>
+      <div class="pipe-arrow">→</div>
+    </div>
+
+    <div class="pipe-step animate-fade-up delay-1" id="pipe-2">
+      <div class="pipe-icon" style="--clr:#8b5cf6">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 10-16 0"/></svg>
+      </div>
+      <div class="pipe-label">MediaPipe<br/><span>Face Detection</span></div>
+      <div class="pipe-arrow">→</div>
+    </div>
+
+    <div class="pipe-step animate-fade-up delay-2" id="pipe-3">
+      <div class="pipe-icon" style="--clr:#06b6d4">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2"/><path d="M7 2v20M17 2v20M2 12h20"/></svg>
+      </div>
+      <div class="pipe-label">Crop ROI<br/><span>Face Region</span></div>
+      <div class="pipe-arrow">→</div>
+    </div>
+
+    <div class="pipe-step animate-fade-up delay-3" id="pipe-4">
+      <div class="pipe-icon" style="--clr:#10b981">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
+      </div>
+      <div class="pipe-label">YOLO11-cls<br/><span>Classification</span></div>
+      <div class="pipe-arrow">→</div>
+    </div>
+
+    <div class="pipe-step animate-fade-up delay-4" id="pipe-5">
+      <div class="pipe-icon" style="--clr:#f59e0b">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      </div>
+      <div class="pipe-label">Label Smoothing<br/><span>Voting Window</span></div>
+      <div class="pipe-arrow">→</div>
+    </div>
+
+    <div class="pipe-step animate-fade-up delay-4" id="pipe-6">
+      <div class="pipe-icon" style="--clr:#ef4444">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+      </div>
+      <div class="pipe-label">Alert &amp; Display<br/><span>Result Output</span></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════
+     CLASSES
+══════════════════════════════════════════════ -->
+<section class="section" id="classes-section">
+  <h2 class="section-title">Các Nhãn Phân Loại</h2>
+  <div class="classes-grid">
+
+    <div class="class-card animate-fade-up" id="class-awake" style="--accent:#00e676">
+      <div class="class-emoji">😊</div>
+      <div class="class-name">Awake</div>
+      <div class="class-desc">Tài xế tỉnh táo, nhìn thẳng phía trước, mắt mở bình thường.</div>
+      <div class="class-metric">
+        <span>Precision</span><strong>96.7%</strong>
+      </div>
+    </div>
+
+    <div class="class-card animate-fade-up delay-1" id="class-drowsy" style="--accent:#ff1744">
+      <div class="class-emoji">😴</div>
+      <div class="class-name">Drowsy</div>
+      <div class="class-desc">Mắt nhắm hoặc nặng mí, biểu hiện buồn ngủ, phản ứng chậm.</div>
+      <div class="class-metric">
+        <span>Precision</span><strong>100%</strong>
+      </div>
+    </div>
+
+    <div class="class-card animate-fade-up delay-2" id="class-yawning" style="--accent:#ff9100">
+      <div class="class-emoji">🥱</div>
+      <div class="class-name">Yawning</div>
+      <div class="class-desc">Tài xế đang ngáp, miệng mở rộng, dấu hiệu mệt mỏi.</div>
+      <div class="class-metric">
+        <span>Precision</span><strong>99.3%</strong>
+      </div>
+    </div>
+
+    <div class="class-card animate-fade-up delay-3" id="class-looking-away" style="--accent:#2979ff">
+      <div class="class-emoji">👀</div>
+      <div class="class-name">Looking Away</div>
+      <div class="class-desc">Tài xế nhìn sang hướng khác, không tập trung vào đường.</div>
+      <div class="class-metric">
+        <span>Precision</span><strong>99.3%</strong>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════
+     TECH STACK
+══════════════════════════════════════════════ -->
+<section class="section" id="tech-section">
+  <h2 class="section-title">Công Nghệ Sử Dụng</h2>
+  <div class="tech-grid">
+    <div class="tech-item" id="tech-mediapipe"><span class="tech-icon">🧠</span><span>MediaPipe</span></div>
+    <div class="tech-item" id="tech-yolo"><span class="tech-icon">⚡</span><span>YOLO11-cls</span></div>
+    <div class="tech-item" id="tech-opencv"><span class="tech-icon">📷</span><span>OpenCV</span></div>
+    <div class="tech-item" id="tech-python"><span class="tech-icon">🐍</span><span>Python 3.11</span></div>
+    <div class="tech-item" id="tech-flask"><span class="tech-icon">🌶️</span><span>Flask</span></div>
+    <div class="tech-item" id="tech-sklearn"><span class="tech-icon">📊</span><span>Scikit-learn</span></div>
+  </div>
+</section>
+
+{% endblock %}

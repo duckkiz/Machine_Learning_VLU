@@ -1,0 +1,7 @@
+TEST METRICS SUMMARY
+num_samples: 600
+accuracy: 0.9883
+macro_precision: 0.9885
+macro_recall: 0.9883
+macro_f1: 0.9884
+weighted_f1: 0.9884

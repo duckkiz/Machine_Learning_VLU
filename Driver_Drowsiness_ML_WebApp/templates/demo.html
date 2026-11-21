@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+{% block title %}Live Demo · DrowsyGuard{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <h1 class="page-title">Live <span class="gradient-text">Webcam</span> Demo</h1>
+  <p class="page-desc">Nhận diện trạng thái tài xế theo thời gian thực qua webcam</p>
+</section>
+
+<div class="demo-layout" id="demo-layout">
+
+  <!-- ── LEFT: Camera feed ── -->
+  <div class="demo-camera-col">
+    <div class="camera-wrapper" id="camera-wrapper">
+      <div class="camera-frame" id="camera-frame">
+
+        <!-- Stream IMG (hidden until started) -->
+        <img id="video-stream" src="" alt="Video stream" class="video-stream hidden"/>
+
+        <!-- Placeholder (shown when stopped) -->
+        <div class="camera-placeholder" id="camera-placeholder">
+          <div class="placeholder-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+            </svg>
+          </div>
+          <p>Nhấn <strong>Start</strong> để bắt đầu</p>
+          <p class="placeholder-sub">Đảm bảo webcam được kết nối và cấp quyền</p>
+        </div>
+
+        <!-- Corner decorations -->
+        <div class="cam-corner tl"></div>
+        <div class="cam-corner tr"></div>
+        <div class="cam-corner bl"></div>
+        <div class="cam-corner br"></div>
+
+        <!-- Alert flash overlay -->
+        <div class="alert-flash" id="alert-flash"></div>
+      </div>
+
+      <!-- Camera Controls -->
+      <div class="camera-controls" id="camera-controls">
+        <button class="btn btn-primary btn-lg" id="start-btn" onclick="startCamera()">
+          <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Start
+        </button>
+        <button class="btn btn-danger btn-lg" id="stop-btn" onclick="stopCamera()" disabled>
+          <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12"/></svg>
+          Stop
+        </button>
+      </div>
+    </div>
+
+    <!-- Settings -->
+    <div class="settings-card" id="settings-card">
+      <h3 class="settings-title">⚙️ Cài Đặt</h3>
+      <div class="settings-grid">
+        <div class="setting-row">
+          <label for="set-window">Voting Window</label>
+          <input type="range" id="set-window" min="3" max="20" value="9" class="slider"/>
+          <span class="slider-val" id="val-window">9</span>
+        </div>
+        <div class="setting-row">
+          <label for="set-minvotes">Min Votes</label>
+          <input type="range" id="set-minvotes" min="1" max="15" value="6" class="slider"/>
+          <span class="slider-val" id="val-minvotes">6</span>
+        </div>
+        <div class="setting-row">
+          <label for="set-conf">Confidence</label>
+          <input type="range" id="set-conf" min="10" max="90" value="45" class="slider"/>
+          <span class="slider-val" id="val-conf">0.45</span>
+        </div>
+        <div class="setting-row">
+          <label for="set-camera">Camera Index</label>
+          <input type="number" id="set-camera" min="0" max="5" value="0" class="num-input"/>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── RIGHT: Status panel ── -->
+  <div class="demo-status-col" id="demo-status-col">
+
+    <!-- Main status box -->
+    <div class="status-box" id="status-box">
+      <div class="status-header">Driver State</div>
+
+      <div class="status-label-row">
+        <div class="status-dot" id="status-dot"></div>
+        <div class="status-label" id="status-label">—</div>
+      </div>
+
+      <div class="conf-bar-wrap">
+        <div class="conf-bar-track">
+          <div class="conf-bar-fill" id="conf-bar"></div>
+        </div>
+        <span class="conf-pct" id="conf-pct">0%</span>
+      </div>
+
+      <div class="status-note" id="status-note"></div>
+      <div class="fps-badge" id="fps-badge">FPS: —</div>
+
+      <!-- Alert Banner -->
+      <div class="alert-banner hidden" id="alert-banner">
+        <span>⚠</span> ALERT DETECTED
+      </div>
+    </div>
+
+    <!-- Label legend -->
+    <div class="legend-card" id="legend-card">
+      <h3 class="legend-title">Nhãn Phân Loại</h3>
+      <div class="legend-list">
+        <div class="legend-item"><span class="ldot" style="background:#00e676"></span>Awake &mdash; Tỉnh táo</div>
+        <div class="legend-item"><span class="ldot" style="background:#ff1744"></span>Drowsy &mdash; Buồn ngủ ⚠️</div>
+        <div class="legend-item"><span class="ldot" style="background:#ff9100"></span>Yawning &mdash; Đang ngáp ⚠️</div>
+        <div class="legend-item"><span class="ldot" style="background:#2979ff"></span>Looking Away &mdash; Nhìn đi chỗ khác ⚠️</div>
+        <div class="legend-item"><span class="ldot" style="background:#d500f9"></span>Distracted &mdash; Mất tập trung ⚠️</div>
+        <div class="legend-item"><span class="ldot" style="background:#607d8b"></span>No Face &mdash; Không phát hiện mặt</div>
+      </div>
+    </div>
+
+    <!-- Alert History -->
+    <div class="alert-history-card" id="alert-history-card">
+      <h3 class="legend-title">📋 Lịch Sử Cảnh Báo</h3>
+      <div class="alert-history-list" id="alert-history-list">
+        <div class="history-empty" id="history-empty">Chưa có cảnh báo nào</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+let polling = null;
+
+function updateSlider(id, valId, scale) {
+  const el = document.getElementById(id);
+  const valEl = document.getElementById(valId);
+  el.addEventListener('input', () => {
+    valEl.textContent = scale ? (el.value / 100).toFixed(2) : el.value;
+  });
+}
+updateSlider('set-window',   'val-window',   false);
+updateSlider('set-minvotes', 'val-minvotes', false);
+updateSlider('set-conf',     'val-conf',     true);
+
+function startCamera() {
+  const payload = {
+    camera:    parseInt(document.getElementById('set-camera').value),
+    window:    parseInt(document.getElementById('set-window').value),
+    min_votes: parseInt(document.getElementById('set-minvotes').value),
+    conf:      parseInt(document.getElementById('set-conf').value) / 100,
+  };
+  fetch('/api/start_camera', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(payload)
+  }).then(r => r.json()).then(data => {
+    if (data.ok) {
+      document.getElementById('video-stream').src = '/video_feed';
+      document.getElementById('video-stream').classList.remove('hidden');
+      document.getElementById('camera-placeholder').classList.add('hidden');
+      document.getElementById('start-btn').disabled = true;
+      document.getElementById('stop-btn').disabled  = false;
+      startPolling();
+    }
+  });
+}
+
+function stopCamera() {
+  fetch('/api/stop_camera', {method: 'POST'}).then(() => {
+    document.getElementById('video-stream').src = '';
+    document.getElementById('video-stream').classList.add('hidden');
+    document.getElementById('camera-placeholder').classList.remove('hidden');
+    document.getElementById('start-btn').disabled = false;
+    document.getElementById('stop-btn').disabled  = true;
+    stopPolling();
+    resetStatus();
+  });
+}
+
+function startPolling() {
+  if (polling) return;
+  polling = setInterval(fetchStatus, 300);
+}
+function stopPolling() {
+  clearInterval(polling);
+  polling = null;
+}
+
+function resetStatus() {
+  document.getElementById('status-label').textContent = '—';
+  document.getElementById('status-dot').style.background = '#607d8b';
+  document.getElementById('conf-bar').style.width = '0%';
+  document.getElementById('conf-pct').textContent = '0%';
+  document.getElementById('status-note').textContent = '';
+  document.getElementById('fps-badge').textContent = 'FPS: —';
+  document.getElementById('alert-banner').classList.add('hidden');
+  document.getElementById('alert-flash').classList.remove('active');
+}
+
+function fetchStatus() {
+  fetch('/api/status').then(r => r.json()).then(d => {
+    const lbl   = d.label || 'no_face';
+    const conf  = d.confidence || 0;
+    const color = d.color || '#607d8b';
+
+    document.getElementById('status-label').textContent = lbl.replace(/_/g, ' ').toUpperCase();
+    document.getElementById('status-label').style.color = color;
+    document.getElementById('status-dot').style.background = color;
+    document.getElementById('status-dot').style.boxShadow = `0 0 12px ${color}`;
+
+    const pct = Math.round(conf * 100);
+    document.getElementById('conf-bar').style.width = pct + '%';
+    document.getElementById('conf-bar').style.background = color;
+    document.getElementById('conf-pct').textContent = pct + '%';
+
+    document.getElementById('status-note').textContent = d.note || '';
+    document.getElementById('fps-badge').textContent = `FPS: ${d.fps || 0}`;
+
+    // Alert
+    const alertBanner = document.getElementById('alert-banner');
+    const alertFlash  = document.getElementById('alert-flash');
+    if (d.alert) {
+      alertBanner.classList.remove('hidden');
+      alertFlash.classList.add('active');
+    } else {
+      alertBanner.classList.add('hidden');
+      alertFlash.classList.remove('active');
+    }
+
+    // History
+    const histList = document.getElementById('alert-history-list');
+    const emptyEl  = document.getElementById('history-empty');
+    if (d.alert_history && d.alert_history.length > 0) {
+      emptyEl.style.display = 'none';
+      histList.innerHTML = '';
+      const items = [...d.alert_history].reverse().slice(0, 10);
+      items.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'history-item';
+        div.innerHTML = `<span class="hist-time">${item.time}</span><span class="hist-label">${item.label.replace(/_/g,' ')}</span>`;
+        histList.appendChild(div);
+      });
+    }
+  }).catch(() => {});
+}
+</script>
+{% endblock %}
